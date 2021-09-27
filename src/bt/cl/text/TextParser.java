@@ -1,7 +1,5 @@
 package bt.cl.text;
 
-import bt.log.Logger;
-
 public class TextParser
 {
     private static final String START_TAG = "<+bt";
@@ -17,7 +15,6 @@ public class TextParser
 
     private int parseNode(String text, StyledTextNode parent)
     {
-        Logger.global().entry(text);
         StyledTextNode node = new StyledTextNode();
         parent.addChild(node);
 

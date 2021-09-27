@@ -1,0 +1,35 @@
+.blue {
+    -fx-fill: blue;
+}
+
+.red {
+    -fx-fill: red;
+}
+
+.yellow {
+    -fx-fill: yellow;
+}
+
+.green {
+    -fx-fill: green;
+}
+
+.white {
+    -fx-fill: white;
+}
+
+.black {
+    -fx-fill: black;
+}
+
+.magenta {
+    -fx-fill: magenta;
+}
+
+.lime {
+    -fx-fill: lime;
+}
+
+.gray {
+    -fx-fill: gray;
+}
