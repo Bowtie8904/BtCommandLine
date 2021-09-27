@@ -13,4 +13,29 @@
         <maven.compiler.target>17</maven.compiler.target>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.github.Bowtie8904</groupId>
+            <artifactId>BtCommons</artifactId>
+            <version>e94332b4df</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.Bowtie8904</groupId>
+            <artifactId>BtUserInterface</artifactId>
+            <version>5ce46cb5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.fxmisc.richtext</groupId>
+            <artifactId>richtextfx</artifactId>
+            <version>0.10.6</version>
+        </dependency>
+    </dependencies>
+
 </project>

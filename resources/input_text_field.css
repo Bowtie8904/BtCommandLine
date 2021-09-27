@@ -1,0 +1,6 @@
+.input_text_field{
+    -fx-background-color: black;
+    -fx-text-inner-color: white;
+    -fx-font-family: monospace;
+    -fx-font-size: 16px;
+}

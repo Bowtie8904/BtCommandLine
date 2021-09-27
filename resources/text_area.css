@@ -1,0 +1,6 @@
+.text_area{
+    -fx-background-color: black;
+    -fx-fill: white;
+    -fx-font-family: monospace;
+    -fx-font-size: 16px;
+}
