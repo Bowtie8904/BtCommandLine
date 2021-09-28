@@ -1,0 +1,14 @@
+.bold {
+    -fx-font-weight: bold;
+    -fx-fill: white;
+}
+
+.strikethrough {
+    -fx-strikethrough: true;
+    -fx-fill: white;
+}
+
+.underline {
+    -fx-underline: true;
+    -fx-fill: white;
+}

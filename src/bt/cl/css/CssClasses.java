@@ -10,4 +10,8 @@ public class CssClasses
     public static final String TEXT_AREA = "text_area";
     @FxStyleClass
     public static final String DEFAULT_TEXT = "default_text";
+    @FxStyleClass
+    public static final String COLORS = "colors";
+    @FxStyleClass
+    public static final String TEXT_FORMAT = "text_format";
 }

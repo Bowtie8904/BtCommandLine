@@ -1,35 +1,35 @@
 .blue {
-    -fx-fill: blue;
+    -fx-fill: blue !important;
 }
 
 .red {
-    -fx-fill: red;
+    -fx-fill: red !important;
 }
 
 .yellow {
-    -fx-fill: yellow;
+    -fx-fill: yellow !important;
 }
 
 .green {
-    -fx-fill: green;
+    -fx-fill: green !important;
 }
 
 .white {
-    -fx-fill: white;
+    -fx-fill: white !important;
 }
 
 .black {
-    -fx-fill: black;
+    -fx-fill: black !important;
 }
 
 .magenta {
-    -fx-fill: magenta;
+    -fx-fill: magenta !important;
 }
 
 .lime {
-    -fx-fill: lime;
+    -fx-fill: lime !important;
 }
 
 .gray {
-    -fx-fill: gray;
+    -fx-fill: gray !important;
 }

@@ -1,79 +1,94 @@
 package bt.cl.screen;
 
-import bt.cl.css.CssClasses;
-import bt.cl.css.CssLoader;
-import bt.cl.text.TextParser;
 import bt.gui.fx.core.FxScreen;
 import bt.gui.fx.core.annot.FxmlElement;
-import bt.gui.fx.core.annot.css.FxStyleClass;
 import bt.gui.fx.core.annot.handl.FxHandler;
-import bt.gui.fx.core.annot.handl.evnt.type.FxOnKeyReleased;
-import bt.gui.fx.core.annot.setup.FxSetup;
+import bt.gui.fx.core.annot.handl.evnt.type.FxOnAction;
+import bt.gui.fx.core.annot.handl.evnt.type.FxOnMouseEntered;
+import bt.gui.fx.core.annot.handl.evnt.type.FxOnMouseExited;
+import bt.gui.fx.core.exc.FxException;
+import bt.gui.fx.util.ButtonHandling;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextField;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
+import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
-import org.fxmisc.flowless.VirtualizedScrollPane;
-import org.fxmisc.richtext.CodeArea;
 
-import java.net.MalformedURLException;
-import java.util.List;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 
-@FxStyleClass(CssClasses.class)
 public class MainScreen extends FxScreen
 {
     @FxmlElement
     private BorderPane basePane;
 
     @FxmlElement
-    @FxSetup(css = CssClasses.INPUT_TEXT_FIELD)
-    @FxHandler(type = FxOnKeyReleased.class, method = "onTextEnter")
-    private TextField inputTextField;
+    private TabPane tabPane;
 
-    @FxSetup(css = CssClasses.TEXT_AREA)
-    private CodeArea textArea;
+    @FxmlElement
+    @FxHandler(type = FxOnAction.class, method = "addTab", withParameters = false)
+    @FxHandler(type = FxOnMouseEntered.class, methodClass = ButtonHandling.class, method = "onMouseEnter", withParameters = false, passField = true)
+    @FxHandler(type = FxOnMouseExited.class, methodClass = ButtonHandling.class, method = "onMouseExit", withParameters = false, passField = true)
+    private Button addButton;
+
+    public void addTab()
+    {
+        ConsoleTabScreen screen = constructScreenInstance(ConsoleTabScreen.class);
+        screen.setScreenManager(this.screenManager);
+        Parent root = screen.load();
+        screen.setStage(this.stage);
+        screen.prepareStage(this.stage);
+        //Scene scene = new Scene(root, screen.getWidth(), screen.getHeight());
+        screen.setScene(scene);
+        screen.prepareScene(scene);
+
+        Tab tab = new Tab();
+        this.tabPane.getTabs().add(tab);
+        tab.setContent(root);
+        screen.setTab(tab);
+    }
 
     @Override
     protected void prepareScreen()
     {
-        this.textArea = new CodeArea();
-        this.textArea.setEditable(false);
-        this.basePane.setCenter(new StackPane(new VirtualizedScrollPane<>(this.textArea, ScrollPane.ScrollBarPolicy.NEVER, ScrollPane.ScrollBarPolicy.NEVER)));
+
     }
 
     @Override
     protected void prepareStage(Stage stage)
     {
-
+        stage.setTitle("BtCommandLine");
+        setIcons("/icon.png");
     }
 
     @Override
     protected void prepareScene(Scene scene)
     {
-        try
-        {
-            new CssLoader(scene).loadCssFiles();
-        }
-        catch (MalformedURLException e)
-        {
-            e.printStackTrace();
-        }
+
     }
 
-    private void onTextEnter(KeyEvent e)
+    protected <T extends FxScreen> T constructScreenInstance(Class<T> screenType)
     {
-        if (e.getCode() == KeyCode.ENTER)
+        T screen = null;
+
+        try
         {
-            //this.textArea.append(this.inputTextField.getText() + "\n", List.of("green"));
-
-            var node = new TextParser().parse(this.inputTextField.getText());
-
-            node.apply(this.textArea);
-
-            this.inputTextField.setText("");
+            Constructor<T> construct = screenType.getConstructor();
+            construct.setAccessible(true);
+            screen = construct.newInstance();
         }
+        catch (InstantiationException | IllegalAccessException
+                | InvocationTargetException | SecurityException e1)
+        {
+            e1.printStackTrace();
+        }
+        catch (NoSuchMethodException noEx)
+        {
+            throw new FxException("Screen class must implement a constructor without arguments.");
+        }
+
+        return screen;
     }
 }
