@@ -111,12 +111,6 @@ public class ConsoleTabScreen extends FxScreen
         populateFxHandlers();
     }
 
-    public void afterSetup()
-    {
-        //setProcess("btc.bat", "-p", "58928", "-raw");
-        //setProcess("btc", "-p", "9001");
-    }
-
     private void addHistory(String text)
     {
         if (this.history.size() >= this.historySize - 1 && !this.history.contains(text))

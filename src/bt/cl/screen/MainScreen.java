@@ -75,8 +75,6 @@ public class MainScreen extends FxScreen
         tab.setText("New tab");
 
         this.tabPane.getSelectionModel().select(tab);
-
-        screen.afterSetup();
     }
 
     @Override
