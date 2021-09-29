@@ -1,7 +1,10 @@
 package bt.cl.screen;
 
+import bt.cl.css.CssClasses;
+import bt.cl.css.CssLoader;
 import bt.gui.fx.core.FxScreen;
 import bt.gui.fx.core.annot.FxmlElement;
+import bt.gui.fx.core.annot.css.FxStyleClass;
 import bt.gui.fx.core.annot.handl.FxHandler;
 import bt.gui.fx.core.annot.handl.evnt.type.FxOnAction;
 import bt.gui.fx.core.annot.handl.evnt.type.FxOnMouseEntered;
@@ -13,17 +16,15 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
-import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.net.MalformedURLException;
 
+@FxStyleClass(CssClasses.class)
 public class MainScreen extends FxScreen
 {
-    @FxmlElement
-    private BorderPane basePane;
-
     @FxmlElement
     private TabPane tabPane;
 
@@ -33,21 +34,40 @@ public class MainScreen extends FxScreen
     @FxHandler(type = FxOnMouseExited.class, methodClass = ButtonHandling.class, method = "onMouseExit", withParameters = false, passField = true)
     private Button addButton;
 
+    @FxmlElement
+    @FxHandler(type = FxOnAction.class, method = "scrollDown", withParameters = false)
+    @FxHandler(type = FxOnMouseEntered.class, methodClass = ButtonHandling.class, method = "onMouseEnter", withParameters = false, passField = true)
+    @FxHandler(type = FxOnMouseExited.class, methodClass = ButtonHandling.class, method = "onMouseExit", withParameters = false, passField = true)
+    private Button scrollDownButton;
+
     public void addTab()
     {
+        Tab tab = new Tab();
+        this.tabPane.getTabs().add(tab);
+
         ConsoleTabScreen screen = constructScreenInstance(ConsoleTabScreen.class);
         screen.setScreenManager(this.screenManager);
+        screen.setTab(tab);
+        tab.setOnSelectionChanged(e ->
+                                  {
+                                      if (tab.isSelected())
+                                      {
+                                          screen.onSelect();
+                                      }
+                                  });
+
         Parent root = screen.load();
         screen.setStage(this.stage);
         screen.prepareStage(this.stage);
-        //Scene scene = new Scene(root, screen.getWidth(), screen.getHeight());
-        screen.setScene(scene);
-        screen.prepareScene(scene);
+        screen.setScene(this.scene);
+        screen.prepareScene(this.scene);
 
-        Tab tab = new Tab();
-        this.tabPane.getTabs().add(tab);
         tab.setContent(root);
-        screen.setTab(tab);
+        tab.setText("New tab");
+
+        this.tabPane.getSelectionModel().select(tab);
+
+        screen.afterSetup();
     }
 
     @Override
@@ -66,7 +86,14 @@ public class MainScreen extends FxScreen
     @Override
     protected void prepareScene(Scene scene)
     {
-
+        try
+        {
+            new CssLoader(scene).loadCssFiles();
+        }
+        catch (MalformedURLException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     protected <T extends FxScreen> T constructScreenInstance(Class<T> screenType)
@@ -90,5 +117,10 @@ public class MainScreen extends FxScreen
         }
 
         return screen;
+    }
+
+    public void scrollDown()
+    {
+        // TODO
     }
 }

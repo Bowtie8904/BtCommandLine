@@ -33,3 +33,7 @@
 .gray {
     -fx-fill: gray !important;
 }
+
+.grey {
+    -fx-fill: gray !important;
+}

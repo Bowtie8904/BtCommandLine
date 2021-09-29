@@ -7,7 +7,7 @@ public class ScreenManager extends FxScreenManager
     @Override
     protected void loadScreens()
     {
-
+        addScreens(MainScreen.class);
     }
 
     @Override

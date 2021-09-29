@@ -5,11 +5,18 @@
 <?import javafx.scene.layout.BorderPane?>
 
 
-<BorderPane fx:id="basePane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="514.0" prefWidth="814.0" style="-fx-background-color: black;" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1">
+<BorderPane fx:id="basePane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="570.0" prefWidth="898.0" style="-fx-background-color: black;" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1">
    <center>
-      <TabPane fx:id="tabPane" tabClosingPolicy="ALL_TABS" BorderPane.alignment="CENTER" />
+      <TabPane fx:id="tabPane" focusTraversable="false" style="-fx-background-color: black;" tabClosingPolicy="ALL_TABS" BorderPane.alignment="CENTER" />
    </center>
-   <top>
-      <Button fx:id="addButton" mnemonicParsing="false" text="+" BorderPane.alignment="CENTER" />
-   </top>
+   <left>
+      <BorderPane BorderPane.alignment="TOP_LEFT">
+         <top>
+            <Button fx:id="addButton" focusTraversable="false" mnemonicParsing="false" text="+" BorderPane.alignment="CENTER" />
+         </top>
+         <bottom>
+            <Button fx:id="scrollDownButton" mnemonicParsing="false" text="v" BorderPane.alignment="CENTER" />
+         </bottom>
+      </BorderPane>
+   </left>
 </BorderPane>
