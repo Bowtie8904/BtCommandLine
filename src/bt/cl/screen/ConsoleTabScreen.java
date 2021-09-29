@@ -1,7 +1,10 @@
 package bt.cl.screen;
 
 import bt.cl.css.CssClasses;
+import bt.cl.process.AttachedProcess;
 import bt.cl.screen.comp.ConsoleTextArea;
+import bt.console.input.ArgumentParser;
+import bt.console.output.styled.Style;
 import bt.console.output.styled.StyledTextNode;
 import bt.console.output.styled.StyledTextParser;
 import bt.gui.fx.core.FxScreen;
@@ -9,9 +12,11 @@ import bt.gui.fx.core.annot.FxmlElement;
 import bt.gui.fx.core.annot.handl.FxHandler;
 import bt.gui.fx.core.annot.handl.evnt.type.FxOnKeyReleased;
 import bt.gui.fx.core.annot.handl.evnt.type.FxOnScroll;
-import bt.gui.fx.core.annot.handl.evnt.type.FxOnScrollFinished;
-import bt.gui.fx.core.annot.handl.evnt.type.FxOnScrollStarted;
 import bt.gui.fx.core.annot.setup.FxSetup;
+import bt.runtime.InstanceKiller;
+import bt.scheduler.Threads;
+import bt.utils.Null;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
@@ -24,9 +29,10 @@ import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import org.fxmisc.flowless.VirtualFlow;
 import org.fxmisc.flowless.VirtualizedScrollPane;
-import org.fxmisc.richtext.Caret;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class ConsoleTabScreen extends FxScreen
@@ -36,7 +42,6 @@ public class ConsoleTabScreen extends FxScreen
 
     @FxmlElement
     private ScrollPane scrollPane;
-
 
     @FxmlElement
     @FxSetup(css = CssClasses.INPUT_TEXT_FIELD)
@@ -57,10 +62,25 @@ public class ConsoleTabScreen extends FxScreen
     private double lastScrollPosition;
 
     private Tab tab;
+    private MainScreen mainScreen;
+    private StyledTextParser parser;
+    private AttachedProcess process;
+    private int maxLines = 500;
+
+    public ConsoleTabScreen()
+    {
+        this.parser = new StyledTextParser();
+        InstanceKiller.killOnShutdown(this);
+    }
 
     public void setTab(Tab tab)
     {
         this.tab = tab;
+    }
+
+    public void setMainScreen(MainScreen mainScreen)
+    {
+        this.mainScreen = mainScreen;
     }
 
     @Override
@@ -75,7 +95,6 @@ public class ConsoleTabScreen extends FxScreen
         this.virtualScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         this.scrollPane.setContent(this.virtualScrollPane);
         this.textArea.requestFocus();
-        this.textArea.setShowCaret(Caret.CaretVisibility.ON);
     }
 
     @Override
@@ -94,6 +113,8 @@ public class ConsoleTabScreen extends FxScreen
 
     public void afterSetup()
     {
+        //setProcess("btc.bat", "-p", "58928", "-raw");
+        //setProcess("btc", "-p", "9001");
     }
 
     private void addHistory(String text)
@@ -126,6 +147,23 @@ public class ConsoleTabScreen extends FxScreen
         {
             var node = new StyledTextParser().parseNode(this.inputTextField.getText() + "\n");
             apply(node);
+
+            if (this.process != null)
+            {
+                try
+                {
+                    this.process.write(this.inputTextField.getText() + "\n");
+                }
+                catch (IOException ex)
+                {
+                    printException(ex);
+                }
+            }
+            else
+            {
+                setProcess(ArgumentParser.parseArguments(this.inputTextField.getText()));
+            }
+
             addHistory(this.inputTextField.getText());
             this.inputTextField.setText("");
             this.historyIndex = -1;
@@ -164,14 +202,26 @@ public class ConsoleTabScreen extends FxScreen
         appendText(text, List.of(styles));
     }
 
-    public void appendText(String text, List<String> styles)
+    public synchronized void appendText(String text, List<String> styles)
     {
-        this.textArea.append(text, styles);
+        Platform.runLater(() -> {
+            this.textArea.append(text, styles);
 
-        if (this.autoScroll)
-        {
-            this.textArea.scrollYBy(Double.MAX_VALUE);
-        }
+            while (this.textArea.getParagraphs().size() > this.maxLines)
+            {
+                this.textArea.replaceText(0, 0, 1, 0, "");
+            }
+
+            if (this.autoScroll)
+            {
+                this.textArea.scrollYBy(Double.MAX_VALUE);
+            }
+        });
+    }
+
+    public void parseAndAppendText(String text)
+    {
+        apply(this.parser.parseNode(text));
     }
 
     public void onScroll(ScrollEvent e)
@@ -194,9 +244,60 @@ public class ConsoleTabScreen extends FxScreen
         this.inputTextField.requestFocus();
     }
 
+    public void setProcess(String... args)
+    {
+        try
+        {
+            this.process = new AttachedProcess(args);
+            this.tab.setText(args[0]);
+        }
+        catch (Exception e)
+        {
+            printException(e);
+        }
+
+        Threads.get().executeDaemon(() -> {
+            try
+            {
+                parseAndAppendText(String.format(Style.apply("Starting process %s (%s) with arguments %s", "default_text"),
+                                                 Style.apply(this.process.getExecutable(), "yellow", "bold"),
+                                                 Style.apply(this.process.getExecutablePath(), "green"),
+                                                 Style.apply(Arrays.toString(this.process.getArgs()), "magenta")+ "\n"));
+
+                this.process.setIncominTextConsumer(this::parseAndAppendText);
+                int exitStatus = this.process.start();
+
+                parseAndAppendText(String.format(Style.apply("Process finished with status %s", "default_text"),
+                                                 Style.apply(exitStatus + "", "bold", "red") + "\n"));
+
+                Platform.runLater(() -> this.tab.setText(args[0] + " (killed)"));
+                this.process = null;
+            }
+            catch (Exception e)
+            {
+                printException(e);
+            }
+        }, args[0]);
+    }
+
+    public void printException(Exception e)
+    {
+        parseAndAppendText(Style.apply(e));
+    }
+
     @Override
     public void kill()
     {
+        if (!InstanceKiller.isActive())
+        {
+            InstanceKiller.unregister(this);
+        }
 
+        if (this.tab.isSelected())
+        {
+            this.mainScreen.setActiveTab(null);
+        }
+
+        Null.checkKill(this.process);
     }
 }

@@ -11,6 +11,7 @@ import bt.gui.fx.core.annot.handl.evnt.type.FxOnMouseEntered;
 import bt.gui.fx.core.annot.handl.evnt.type.FxOnMouseExited;
 import bt.gui.fx.core.exc.FxException;
 import bt.gui.fx.util.ButtonHandling;
+import bt.utils.Null;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -40,6 +41,8 @@ public class MainScreen extends FxScreen
     @FxHandler(type = FxOnMouseExited.class, methodClass = ButtonHandling.class, method = "onMouseExit", withParameters = false, passField = true)
     private Button scrollDownButton;
 
+    private ConsoleTabScreen activeTab;
+
     public void addTab()
     {
         Tab tab = new Tab();
@@ -52,15 +55,21 @@ public class MainScreen extends FxScreen
                                   {
                                       if (tab.isSelected())
                                       {
+                                          setActiveTab(screen);
                                           screen.onSelect();
                                       }
                                   });
+
+        tab.setOnClosed(e -> {
+            screen.kill();
+        });
 
         Parent root = screen.load();
         screen.setStage(this.stage);
         screen.prepareStage(this.stage);
         screen.setScene(this.scene);
         screen.prepareScene(this.scene);
+        screen.setMainScreen(this);
 
         tab.setContent(root);
         tab.setText("New tab");
@@ -119,8 +128,13 @@ public class MainScreen extends FxScreen
         return screen;
     }
 
+    public void setActiveTab(ConsoleTabScreen activeTab)
+    {
+        this.activeTab = activeTab;
+    }
+
     public void scrollDown()
     {
-        // TODO
+        Null.checkRun(this.activeTab, () -> this.activeTab.scrollToEnd());
     }
 }
