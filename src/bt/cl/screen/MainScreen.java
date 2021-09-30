@@ -102,6 +102,8 @@ public class MainScreen extends FxScreen
         {
             e.printStackTrace();
         }
+
+        addTab();
     }
 
     protected <T extends FxScreen> T constructScreenInstance(Class<T> screenType)
