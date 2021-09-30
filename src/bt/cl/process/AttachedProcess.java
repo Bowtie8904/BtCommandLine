@@ -2,6 +2,7 @@ package bt.cl.process;
 
 import bt.types.Killable;
 import bt.utils.Array;
+import bt.utils.Exceptions;
 import bt.utils.Null;
 
 import java.io.*;
@@ -11,10 +12,11 @@ import java.util.function.Consumer;
 
 public class AttachedProcess implements Killable
 {
+    private static final String DEFAULT_EXIT_COMMAND = "exit\n";
     private static String[] fileEndings = {"", ".bat", ".exe", ".jar"};
     private Process process;
     private Consumer<String> incominTextConsumer;
-    private BufferedWriter writer;
+    private BufferedWriter out;
     private String executablePath;
     private String executable;
     private String[] args;
@@ -75,7 +77,7 @@ public class AttachedProcess implements Killable
         ProcessBuilder processBuilder = new ProcessBuilder(Array.concat(new String[] { this.executablePath }, this.args, String[]::new));
         processBuilder.redirectErrorStream(true);
         this.process = processBuilder.start();
-        this.writer = new BufferedWriter(new OutputStreamWriter(this.process.getOutputStream()));
+        this.out = new BufferedWriter(new OutputStreamWriter(this.process.getOutputStream()));
 
         try (BufferedReader in = new BufferedReader(new InputStreamReader(this.process.getInputStream())))
         {
@@ -85,17 +87,17 @@ public class AttachedProcess implements Killable
             {
                 Null.checkConsume(this.incominTextConsumer, line + "\n");
             }
-
-            this.process.waitFor();
-            kill();
-            return this.process.exitValue();
         }
+
+        this.process.waitFor();
+        kill();
+        return this.process.exitValue();
     }
 
     public void write(String text) throws IOException
     {
-        this.writer.write(text);
-        this.writer.flush();
+        this.out.write(text);
+        this.out.flush();
     }
 
     public void setIncominTextConsumer(Consumer<String> incominTextConsumer)
@@ -106,16 +108,13 @@ public class AttachedProcess implements Killable
     @Override
     public void kill()
     {
-        Null.checkRun(this.process, () -> this.process.destroy());
+        if (this.process != null && this.process.isAlive())
+        {
+            Exceptions.uncheck(() -> write(DEFAULT_EXIT_COMMAND));
+        }
 
-        try
-        {
-            Null.checkClose(this.writer);
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
+        Exceptions.uncheck(() -> Null.checkClose(this.out));
+        Null.checkRun(this.process, () -> this.process.destroy());
     }
 
     public String getExecutable()

@@ -243,18 +243,20 @@ public class ConsoleTabScreen extends FxScreen
         try
         {
             this.process = new AttachedProcess(args);
-            this.tab.setText(args[0]);
+            this.tab.setText(this.process.getExecutable());
         }
         catch (Exception e)
         {
             printException(e);
         }
 
-        Threads.get().executeDaemon(() -> {
+        Threads.get().executeCachedDaemon(() -> {
             try
             {
+                String executableName = this.process.getExecutable();
+
                 parseAndAppendText(String.format(Style.apply("Starting process %s (%s) with arguments %s", "default_text"),
-                                                 Style.apply(this.process.getExecutable(), "yellow", "bold"),
+                                                 Style.apply(executableName, "yellow", "bold"),
                                                  Style.apply(this.process.getExecutablePath(), "green"),
                                                  Style.apply(Arrays.toString(this.process.getArgs()), "magenta")+ "\n"));
 
@@ -262,16 +264,32 @@ public class ConsoleTabScreen extends FxScreen
                 int exitStatus = this.process.start();
 
                 parseAndAppendText(String.format(Style.apply("Process finished with status %s", "default_text"),
-                                                 Style.apply(exitStatus + "", "bold", "red") + "\n"));
+                                                 styleExitStatus(exitStatus) + "\n"));
 
-                Platform.runLater(() -> this.tab.setText(args[0] + " (killed)"));
+                Platform.runLater(() -> this.tab.setText(executableName + " (killed)"));
                 this.process = null;
             }
             catch (Exception e)
             {
                 printException(e);
             }
-        }, args[0]);
+        }, this.process.getExecutable());
+    }
+
+    protected String styleExitStatus(int status)
+    {
+        String[] styles = null;
+
+        if (status < 0)
+        {
+            styles = new String[]{"red", "bold"};
+        }
+        else if (status >= 0)
+        {
+            styles = new String[]{"green", "bold"};
+        }
+
+        return Style.apply(status + "", styles);
     }
 
     public void printException(Exception e)
