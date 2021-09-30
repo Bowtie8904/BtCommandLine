@@ -244,36 +244,36 @@ public class ConsoleTabScreen extends FxScreen
         {
             this.process = new AttachedProcess(args);
             this.tab.setText(this.process.getExecutable());
+
+            Threads.get().executeCachedDaemon(() -> {
+                try
+                {
+                    String executableName = this.process.getExecutable();
+
+                    parseAndAppendText(String.format(Style.apply("Starting process %s (%s) with arguments %s", "default_text"),
+                                                     Style.apply(executableName, "yellow", "bold"),
+                                                     Style.apply(this.process.getExecutablePath(), "green"),
+                                                     Style.apply(Arrays.toString(this.process.getArgs()), "magenta")+ "\n"));
+
+                    this.process.setIncominTextConsumer(this::parseAndAppendText);
+                    int exitStatus = this.process.start();
+
+                    parseAndAppendText(String.format(Style.apply("Process finished with status %s", "default_text"),
+                                                     styleExitStatus(exitStatus) + "\n"));
+
+                    Platform.runLater(() -> this.tab.setText(executableName + " (killed)"));
+                    this.process = null;
+                }
+                catch (Exception e)
+                {
+                    printException(e);
+                }
+            }, this.process.getExecutable());
         }
         catch (Exception e)
         {
-            printException(e);
+            parseAndAppendText(Style.apply(e.getMessage(), "red", "bold"));
         }
-
-        Threads.get().executeCachedDaemon(() -> {
-            try
-            {
-                String executableName = this.process.getExecutable();
-
-                parseAndAppendText(String.format(Style.apply("Starting process %s (%s) with arguments %s", "default_text"),
-                                                 Style.apply(executableName, "yellow", "bold"),
-                                                 Style.apply(this.process.getExecutablePath(), "green"),
-                                                 Style.apply(Arrays.toString(this.process.getArgs()), "magenta")+ "\n"));
-
-                this.process.setIncominTextConsumer(this::parseAndAppendText);
-                int exitStatus = this.process.start();
-
-                parseAndAppendText(String.format(Style.apply("Process finished with status %s", "default_text"),
-                                                 styleExitStatus(exitStatus) + "\n"));
-
-                Platform.runLater(() -> this.tab.setText(executableName + " (killed)"));
-                this.process = null;
-            }
-            catch (Exception e)
-            {
-                printException(e);
-            }
-        }, this.process.getExecutable());
     }
 
     protected String styleExitStatus(int status)
@@ -303,11 +303,6 @@ public class ConsoleTabScreen extends FxScreen
         if (!InstanceKiller.isActive())
         {
             InstanceKiller.unregister(this);
-        }
-
-        if (this.tab.isSelected())
-        {
-            this.mainScreen.setActiveTab(null);
         }
 
         Null.checkKill(this.process);

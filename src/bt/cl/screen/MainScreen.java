@@ -62,6 +62,7 @@ public class MainScreen extends FxScreen
 
         tab.setOnClosed(e -> {
             screen.kill();
+            setActiveTab(null);
         });
 
         Parent root = screen.load();

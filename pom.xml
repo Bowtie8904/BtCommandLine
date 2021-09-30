@@ -74,7 +74,7 @@
         <dependency>
             <groupId>com.github.Bowtie8904</groupId>
             <artifactId>BtConsole</artifactId>
-            <version>bc236097</version>
+            <version>c3dc3a82</version>
         </dependency>
         <dependency>
             <groupId>org.fxmisc.richtext</groupId>
