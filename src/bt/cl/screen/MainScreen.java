@@ -45,6 +45,11 @@ public class MainScreen extends FxScreen
 
     public void addTab()
     {
+        addTab(new String[0]);
+    }
+
+    public void addTab(String[] args)
+    {
         Tab tab = new Tab();
         this.tabPane.getTabs().add(tab);
 
@@ -76,6 +81,11 @@ public class MainScreen extends FxScreen
         tab.setText("New tab");
 
         this.tabPane.getSelectionModel().select(tab);
+
+        if (args.length > 0)
+        {
+            screen.setProcess(args);
+        }
     }
 
     @Override
@@ -102,8 +112,6 @@ public class MainScreen extends FxScreen
         {
             e.printStackTrace();
         }
-
-        addTab();
     }
 
     protected <T extends FxScreen> T constructScreenInstance(Class<T> screenType)
