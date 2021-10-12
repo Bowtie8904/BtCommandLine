@@ -104,6 +104,13 @@ public class MainScreen extends FxScreen
     @Override
     protected void prepareScene(Scene scene)
     {
+    }
+
+    @Override
+    protected void loadCssClasses()
+    {
+        super.loadCssClasses();
+
         try
         {
             new CssLoader(scene).loadCssFiles();

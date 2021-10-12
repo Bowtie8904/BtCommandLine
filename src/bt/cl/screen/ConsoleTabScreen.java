@@ -71,8 +71,7 @@ public class ConsoleTabScreen extends FxScreen
 
     public ConsoleTabScreen()
     {
-
-        this.parser = new StyledTextParser(); //new ExtendedStyedTextParser();
+        this.parser = new StyledTextParser();
         InstanceKiller.killOnShutdown(this);
     }
 
