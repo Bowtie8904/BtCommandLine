@@ -3,6 +3,7 @@ package bt.cl.screen;
 import bt.cl.css.CssClasses;
 import bt.cl.process.AttachedProcess;
 import bt.cl.screen.comp.ConsoleTextArea;
+import bt.cl.screen.link.Hyperlink;
 import bt.console.input.ArgumentParser;
 import bt.console.output.styled.Style;
 import bt.console.output.styled.StyledTextNode;
@@ -25,10 +26,11 @@ import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.ScrollEvent;
-import javafx.scene.layout.*;
+import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import org.fxmisc.flowless.VirtualFlow;
 import org.fxmisc.flowless.VirtualizedScrollPane;
+import org.reactfx.util.Either;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -69,7 +71,8 @@ public class ConsoleTabScreen extends FxScreen
 
     public ConsoleTabScreen()
     {
-        this.parser = new StyledTextParser();
+
+        this.parser = new StyledTextParser(); //new ExtendedStyedTextParser();
         InstanceKiller.killOnShutdown(this);
     }
 
@@ -90,7 +93,7 @@ public class ConsoleTabScreen extends FxScreen
         this.textArea = new ConsoleTextArea();
         this.textArea.setEditable(false);
         this.textArea.setPadding(new Insets(0, 0, 0, 5));
-        this.virtualScrollPane =  new VirtualizedScrollPane(this.textArea);
+        this.virtualScrollPane = new VirtualizedScrollPane(this.textArea);
         this.virtualScrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         this.virtualScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         this.scrollPane.setContent(this.virtualScrollPane);
@@ -139,7 +142,7 @@ public class ConsoleTabScreen extends FxScreen
     {
         if (e.getCode() == KeyCode.ENTER)
         {
-            var node = new StyledTextParser().parseNode(this.inputTextField.getText() + "\n");
+            var node = this.parser.parseNode(this.inputTextField.getText() + "\n");
             apply(node);
 
             if (this.process != null)
@@ -199,7 +202,14 @@ public class ConsoleTabScreen extends FxScreen
     public synchronized void appendText(String text, List<String> styles)
     {
         Platform.runLater(() -> {
-            this.textArea.append(text, styles);
+            if (styles.contains(Style.HYPERLINK_STYLE))
+            {
+                this.textArea.append(Either.right(new Hyperlink(text, text, text)), List.of(Style.HYPERLINK_STYLE));
+            }
+            else
+            {
+                this.textArea.append(Either.left(text), styles);
+            }
 
             while (this.textArea.getParagraphs().size() > this.maxLines)
             {
@@ -215,7 +225,7 @@ public class ConsoleTabScreen extends FxScreen
 
     public void parseAndAppendText(String text)
     {
-        apply(this.parser.parseNode(text));
+        apply(this.parser.parseNode(text, true));
     }
 
     public void onScroll(ScrollEvent e)
@@ -253,7 +263,7 @@ public class ConsoleTabScreen extends FxScreen
                     parseAndAppendText(String.format(Style.apply("Starting process %s (%s) with arguments %s", "default_text"),
                                                      Style.apply(executableName, "yellow", "bold"),
                                                      Style.apply(this.process.getExecutablePath(), "green"),
-                                                     Style.apply(Arrays.toString(this.process.getArgs()), "magenta")+ "\n"));
+                                                     Style.apply(Arrays.toString(this.process.getArgs()), "magenta") + "\n"));
 
                     this.process.setIncominTextConsumer(this::parseAndAppendText);
                     int exitStatus = this.process.start();
@@ -282,11 +292,11 @@ public class ConsoleTabScreen extends FxScreen
 
         if (status < 0)
         {
-            styles = new String[]{"red", "bold"};
+            styles = new String[] { "red", "bold" };
         }
         else if (status >= 0)
         {
-            styles = new String[]{"green", "bold"};
+            styles = new String[] { "green", "bold" };
         }
 
         return Style.apply(status + "", styles);

@@ -1,0 +1,4 @@
+.hyperlink {
+    -fx-fill: blue !important;
+    -fx-underline: true !important;
+}

@@ -14,4 +14,6 @@ public class CssClasses
     public static final String COLORS = "colors";
     @FxStyleClass
     public static final String TEXT_FORMAT = "text_format";
+    @FxStyleClass
+    public static final String HYPERLINK = "hyperlink";
 }
