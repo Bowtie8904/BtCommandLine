@@ -113,7 +113,7 @@ public class MainScreen extends FxScreen
 
         try
         {
-            new CssLoader(scene).loadCssFiles();
+            new CssLoader(this.scene).loadCssFiles();
         }
         catch (MalformedURLException e)
         {

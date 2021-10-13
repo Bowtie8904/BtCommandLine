@@ -1,4 +1,4 @@
-package bt.cl.screen.link;
+package bt.cl.screen.obj;
 
 public class Hyperlink
 {

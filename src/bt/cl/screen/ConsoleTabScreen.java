@@ -3,7 +3,8 @@ package bt.cl.screen;
 import bt.cl.css.CssClasses;
 import bt.cl.process.AttachedProcess;
 import bt.cl.screen.comp.ConsoleTextArea;
-import bt.cl.screen.link.Hyperlink;
+import bt.cl.screen.obj.ConsoleEntry;
+import bt.cl.screen.obj.Hyperlink;
 import bt.console.input.ArgumentParser;
 import bt.console.output.styled.Style;
 import bt.console.output.styled.StyledTextNode;
@@ -36,6 +37,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ConsoleTabScreen extends FxScreen
 {
@@ -69,10 +75,16 @@ public class ConsoleTabScreen extends FxScreen
     private AttachedProcess process;
     private int maxLines = 500;
 
+    private Queue<ConsoleEntry> consoleQueue;
+
+    private Pattern hyperlinkTextpattern = Pattern.compile(Style.HYPERLINK_STYLE + "\\((.*?)\\)");
+
     public ConsoleTabScreen()
     {
         this.parser = new StyledTextParser();
+        this.consoleQueue = new ConcurrentLinkedQueue<>();
         InstanceKiller.killOnShutdown(this);
+        Threads.get().scheduleAtFixedRateDaemon(this::appendFromQueue, 100, 100, TimeUnit.MILLISECONDS);
     }
 
     public void setTab(Tab tab)
@@ -198,40 +210,73 @@ public class ConsoleTabScreen extends FxScreen
         appendText(text, List.of(styles));
     }
 
-    public synchronized void appendText(String text, List<String> styles)
+    public void appendText(String text, List<String> styles)
     {
-        Platform.runLater(() -> {
-            if (styles.contains(Style.HYPERLINK_STYLE))
+        this.consoleQueue.add(new ConsoleEntry(text, styles));
+    }
+
+    protected void appendFromQueue()
+    {
+        ConsoleEntry entry = null;
+        Either<String, Hyperlink> content = null;
+        List<String> styles = null;
+
+        while ((entry = this.consoleQueue.poll()) != null)
+        {
+            String hyperlinkStyle = entry.styles()
+                                         .stream()
+                                         .filter(sty -> sty.startsWith(Style.HYPERLINK_STYLE))
+                                         .findAny().orElse(null);
+
+            if (hyperlinkStyle != null)
             {
-                this.textArea.append(Either.right(new Hyperlink(text, text, text)), List.of(Style.HYPERLINK_STYLE));
+                Matcher matcher = this.hyperlinkTextpattern.matcher(hyperlinkStyle);
+                String link = "";
+
+                if (matcher.find())
+                {
+                    link = matcher.group(1);
+                }
+
+                content = Either.right(new Hyperlink(entry.text(), entry.text(), link.isBlank() ? entry.text() : link));
+                styles = List.of(Style.HYPERLINK_STYLE);
             }
             else
             {
-                this.textArea.append(Either.left(text), styles);
+                content = Either.left(entry.text());
+                styles = entry.styles();
             }
 
-            while (this.textArea.getParagraphs().size() > this.maxLines)
-            {
-                this.textArea.replaceText(0, 0, 1, 0, "");
-            }
+            Either<String, Hyperlink> finalContent = content;
+            List<String> finalStyles = styles;
 
-            if (this.autoScroll)
-            {
-                this.textArea.scrollYBy(Double.MAX_VALUE);
-            }
-        });
+            Platform.runLater(() -> {
+                this.textArea.append(finalContent, finalStyles);
+
+                while (this.textArea.getParagraphs().size() > this.maxLines)
+                {
+                    //this.textArea.replaceText(0, 0, 1, 0, "");
+                }
+
+                if (this.autoScroll)
+                {
+                    //this.textArea.scrollYBy(Double.MAX_VALUE);
+                }
+            });
+        }
     }
 
     public void parseAndAppendText(String text)
     {
-        apply(this.parser.parseNode(text, true));
+        var node = this.parser.parseNode(text, true);
+        apply(node);
     }
 
     public void onScroll(ScrollEvent e)
     {
         if (!(e.getTarget() instanceof VirtualFlow))
         {
-            this.autoScroll = !e.isShiftDown() && e.getDeltaY() < 0 && this.lastScrollPosition == this.textArea.getEstimatedScrollY();
+            //this.autoScroll = !e.isShiftDown() && e.getDeltaY() < 0 && this.lastScrollPosition == this.textArea.getEstimatedScrollY();
             this.lastScrollPosition = this.textArea.getEstimatedScrollY();
         }
     }

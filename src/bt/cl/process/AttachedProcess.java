@@ -13,7 +13,7 @@ import java.util.function.Consumer;
 public class AttachedProcess implements Killable
 {
     private static final String DEFAULT_EXIT_COMMAND = "exit\n";
-    private static String[] fileEndings = {"", ".bat", ".exe", ".jar"};
+    private static String[] fileEndings = { "", ".bat", ".exe", ".jar" };
     private Process process;
     private Consumer<String> incominTextConsumer;
     private BufferedWriter out;
@@ -35,14 +35,14 @@ public class AttachedProcess implements Killable
         {
             String path = System.getenv("PATH");
             String[] dirs = path.split(";");
-            for(String dir: dirs)
+            for (String dir : dirs)
             {
                 for (String ending : fileEndings)
                 {
                     Path pathToFile = Paths.get(dir, executable + ending);
                     file = new File(pathToFile.toString());
 
-                    if(file.canExecute())
+                    if (file.canExecute())
                     {
                         this.executable = executable + ending;
                         break;
@@ -85,6 +85,7 @@ public class AttachedProcess implements Killable
 
             while ((line = in.readLine()) != null)
             {
+                System.out.println(line);
                 Null.checkConsume(this.incominTextConsumer, line + "\n");
             }
         }
