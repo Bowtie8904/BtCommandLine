@@ -73,6 +73,7 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Hype
 
         setUndoManager(getNoOpUndoManager());
         setUseInitialStyleForInsertion(false);
+        setAutoScrollOnDragDesired(false);
         this.consoleQueue = new ConcurrentLinkedQueue<>();
         this.queueFuture = Threads.get().scheduleAtFixedRateDaemon(this::appendFromQueue, 100, 100, TimeUnit.MILLISECONDS);
     }
@@ -218,7 +219,7 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Hype
 
                 if (this.autoScroll)
                 {
-                    scrollYBy(Double.MAX_VALUE);
+                    scrollToEnd();
                 }
             }
             catch (Exception e)
@@ -246,7 +247,7 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Hype
 
                     if (this.autoScroll)
                     {
-                        scrollYBy(Double.MAX_VALUE);
+                        scrollToEnd();
                     }
                 }
                 catch (Exception e)
@@ -255,6 +256,11 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Hype
                 }
             });
         }
+    }
+
+    public void scrollToEnd()
+    {
+        scrollYBy(Double.MAX_VALUE);
     }
 
     @Override

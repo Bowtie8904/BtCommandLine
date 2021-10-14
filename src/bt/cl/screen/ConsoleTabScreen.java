@@ -23,6 +23,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import org.fxmisc.flowless.VirtualizedScrollPane;
 
@@ -35,9 +36,6 @@ public class ConsoleTabScreen extends FxScreen
 {
     @FxmlElement
     private BorderPane basePane;
-
-    @FxmlElement
-    private ScrollPane scrollPane;
 
     @FxmlElement
     @FxSetup(css = CssClasses.INPUT_TEXT_FIELD)
@@ -83,9 +81,8 @@ public class ConsoleTabScreen extends FxScreen
         this.textArea.setPadding(new Insets(0, 0, 0, 5));
         this.virtualScrollPane = new VirtualizedScrollPane(this.textArea);
         this.virtualScrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        this.virtualScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        this.scrollPane.setContent(this.virtualScrollPane);
-        this.textArea.requestFocus();
+        this.basePane.setCenter(new StackPane(this.virtualScrollPane));
+        this.inputTextField.requestFocus();
     }
 
     @Override
