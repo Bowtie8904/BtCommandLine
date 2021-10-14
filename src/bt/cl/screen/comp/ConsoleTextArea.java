@@ -263,6 +263,16 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Hype
         scrollYBy(Double.MAX_VALUE);
     }
 
+    public void setAutoScroll(boolean autoScroll)
+    {
+        this.autoScroll = autoScroll;
+
+        if (this.autoScroll)
+        {
+            scrollToEnd();
+        }
+    }
+
     @Override
     public void kill()
     {

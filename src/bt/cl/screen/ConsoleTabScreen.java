@@ -78,7 +78,7 @@ public class ConsoleTabScreen extends FxScreen
         this.history = new ArrayList<>(this.historySize);
         this.textArea = new ConsoleTextArea();
         this.textArea.setEditable(false);
-        this.textArea.setPadding(new Insets(0, 0, 0, 5));
+        this.textArea.setPadding(new Insets(0, 10, 10, 5));
         this.virtualScrollPane = new VirtualizedScrollPane(this.textArea);
         this.virtualScrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         this.basePane.setCenter(new StackPane(this.virtualScrollPane));
@@ -168,9 +168,9 @@ public class ConsoleTabScreen extends FxScreen
         this.textArea.append(node);
     }
 
-    public void scrollToEnd()
+    public void setAutoScroll(boolean autoScroll)
     {
-        this.textArea.scrollYBy(Double.MAX_VALUE);
+        this.textArea.setAutoScroll(autoScroll);
     }
 
     public void onSelect()

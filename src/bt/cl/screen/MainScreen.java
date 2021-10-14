@@ -11,10 +11,10 @@ import bt.gui.fx.core.annot.handl.evnt.type.FxOnMouseEntered;
 import bt.gui.fx.core.annot.handl.evnt.type.FxOnMouseExited;
 import bt.gui.fx.core.exc.FxException;
 import bt.gui.fx.util.ButtonHandling;
-import bt.utils.Null;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.stage.Stage;
@@ -22,6 +22,8 @@ import javafx.stage.Stage;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
+import java.util.ArrayList;
+import java.util.List;
 
 @FxStyleClass(CssClasses.class)
 public class MainScreen extends FxScreen
@@ -36,12 +38,9 @@ public class MainScreen extends FxScreen
     private Button addButton;
 
     @FxmlElement
-    @FxHandler(type = FxOnAction.class, method = "scrollDown", withParameters = false)
-    @FxHandler(type = FxOnMouseEntered.class, methodClass = ButtonHandling.class, method = "onMouseEnter", withParameters = false, passField = true)
-    @FxHandler(type = FxOnMouseExited.class, methodClass = ButtonHandling.class, method = "onMouseExit", withParameters = false, passField = true)
-    private Button scrollDownButton;
+    private CheckBox autoScrollCheckBox;
 
-    private ConsoleTabScreen activeTab;
+    private List<ConsoleTabScreen> tabScreens;
 
     public void addTab()
     {
@@ -55,19 +54,19 @@ public class MainScreen extends FxScreen
 
         ConsoleTabScreen screen = constructScreenInstance(ConsoleTabScreen.class);
         screen.setScreenManager(this.screenManager);
+        this.tabScreens.add(screen);
         screen.setTab(tab);
         tab.setOnSelectionChanged(e ->
                                   {
                                       if (tab.isSelected())
                                       {
-                                          setActiveTab(screen);
                                           screen.onSelect();
                                       }
                                   });
 
         tab.setOnClosed(e -> {
             screen.kill();
-            setActiveTab(null);
+            this.tabScreens.remove(screen);
         });
 
         Parent root = screen.load();
@@ -91,7 +90,15 @@ public class MainScreen extends FxScreen
     @Override
     protected void prepareScreen()
     {
+        this.tabScreens = new ArrayList<>();
 
+        this.autoScrollCheckBox.setSelected(true);
+        this.autoScrollCheckBox.setOnAction(e -> {
+            for (var tabScreen : this.tabScreens)
+            {
+                tabScreen.setAutoScroll(this.autoScrollCheckBox.isSelected());
+            }
+        });
     }
 
     @Override
@@ -142,15 +149,5 @@ public class MainScreen extends FxScreen
         }
 
         return screen;
-    }
-
-    public void setActiveTab(ConsoleTabScreen activeTab)
-    {
-        this.activeTab = activeTab;
-    }
-
-    public void scrollDown()
-    {
-        Null.checkRun(this.activeTab, () -> this.activeTab.scrollToEnd());
     }
 }
