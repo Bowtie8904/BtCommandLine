@@ -3,17 +3,13 @@ package bt.cl.screen;
 import bt.cl.css.CssClasses;
 import bt.cl.process.AttachedProcess;
 import bt.cl.screen.comp.ConsoleTextArea;
-import bt.cl.screen.obj.ConsoleEntry;
-import bt.cl.screen.obj.Hyperlink;
 import bt.console.input.ArgumentParser;
 import bt.console.output.styled.Style;
-import bt.console.output.styled.StyledTextNode;
 import bt.console.output.styled.StyledTextParser;
 import bt.gui.fx.core.FxScreen;
 import bt.gui.fx.core.annot.FxmlElement;
 import bt.gui.fx.core.annot.handl.FxHandler;
 import bt.gui.fx.core.annot.handl.evnt.type.FxOnKeyReleased;
-import bt.gui.fx.core.annot.handl.evnt.type.FxOnScroll;
 import bt.gui.fx.core.annot.setup.FxSetup;
 import bt.runtime.InstanceKiller;
 import bt.scheduler.Threads;
@@ -26,22 +22,14 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
-import org.fxmisc.flowless.VirtualFlow;
 import org.fxmisc.flowless.VirtualizedScrollPane;
-import org.reactfx.util.Either;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class ConsoleTabScreen extends FxScreen
 {
@@ -57,7 +45,6 @@ public class ConsoleTabScreen extends FxScreen
     private TextField inputTextField;
 
     @FxSetup(css = CssClasses.TEXT_AREA)
-    @FxHandler(type = FxOnScroll.class, method = "onScroll")
     private ConsoleTextArea textArea;
 
     private VirtualizedScrollPane virtualScrollPane;
@@ -66,25 +53,15 @@ public class ConsoleTabScreen extends FxScreen
     private List<String> history;
     private int historyIndex = -1;
 
-    private boolean autoScroll = true;
-    private double lastScrollPosition;
-
     private Tab tab;
     private MainScreen mainScreen;
     private StyledTextParser parser;
     private AttachedProcess process;
-    private int maxLines = 500;
-
-    private Queue<ConsoleEntry> consoleQueue;
-
-    private Pattern hyperlinkTextpattern = Pattern.compile(Style.HYPERLINK_STYLE + "\\((.*?)\\)");
 
     public ConsoleTabScreen()
     {
         this.parser = new StyledTextParser();
-        this.consoleQueue = new ConcurrentLinkedQueue<>();
         InstanceKiller.killOnShutdown(this);
-        Threads.get().scheduleAtFixedRateDaemon(this::appendFromQueue, 100, 100, TimeUnit.MILLISECONDS);
     }
 
     public void setTab(Tab tab)
@@ -154,7 +131,7 @@ public class ConsoleTabScreen extends FxScreen
         if (e.getCode() == KeyCode.ENTER)
         {
             var node = this.parser.parseNode(this.inputTextField.getText() + "\n");
-            apply(node);
+            this.textArea.append(node);
 
             if (this.process != null)
             {
@@ -188,103 +165,15 @@ public class ConsoleTabScreen extends FxScreen
         }
     }
 
-    public void apply(StyledTextNode node)
-    {
-        List<String> allStyles = node.getStyles();
-
-        if (allStyles.isEmpty())
-        {
-            allStyles.add(CssClasses.DEFAULT_TEXT);
-        }
-
-        appendText(node.getText(), allStyles);
-
-        for (var child : node.getChildren())
-        {
-            apply(child);
-        }
-    }
-
-    public void appendText(String text, String... styles)
-    {
-        appendText(text, List.of(styles));
-    }
-
-    public void appendText(String text, List<String> styles)
-    {
-        this.consoleQueue.add(new ConsoleEntry(text, styles));
-    }
-
-    protected void appendFromQueue()
-    {
-        ConsoleEntry entry = null;
-        Either<String, Hyperlink> content = null;
-        List<String> styles = null;
-
-        while ((entry = this.consoleQueue.poll()) != null)
-        {
-            String hyperlinkStyle = entry.styles()
-                                         .stream()
-                                         .filter(sty -> sty.startsWith(Style.HYPERLINK_STYLE))
-                                         .findAny().orElse(null);
-
-            if (hyperlinkStyle != null)
-            {
-                Matcher matcher = this.hyperlinkTextpattern.matcher(hyperlinkStyle);
-                String link = "";
-
-                if (matcher.find())
-                {
-                    link = matcher.group(1);
-                }
-
-                content = Either.right(new Hyperlink(entry.text(), entry.text(), link.isBlank() ? entry.text() : link));
-                styles = List.of(Style.HYPERLINK_STYLE);
-            }
-            else
-            {
-                content = Either.left(entry.text());
-                styles = entry.styles();
-            }
-
-            Either<String, Hyperlink> finalContent = content;
-            List<String> finalStyles = styles;
-
-            Platform.runLater(() -> {
-                this.textArea.append(finalContent, finalStyles);
-
-                while (this.textArea.getParagraphs().size() > this.maxLines)
-                {
-                    //this.textArea.replaceText(0, 0, 1, 0, "");
-                }
-
-                if (this.autoScroll)
-                {
-                    //this.textArea.scrollYBy(Double.MAX_VALUE);
-                }
-            });
-        }
-    }
-
     public void parseAndAppendText(String text)
     {
         var node = this.parser.parseNode(text, true);
-        apply(node);
-    }
-
-    public void onScroll(ScrollEvent e)
-    {
-        if (!(e.getTarget() instanceof VirtualFlow))
-        {
-            //this.autoScroll = !e.isShiftDown() && e.getDeltaY() < 0 && this.lastScrollPosition == this.textArea.getEstimatedScrollY();
-            this.lastScrollPosition = this.textArea.getEstimatedScrollY();
-        }
+        this.textArea.append(node);
     }
 
     public void scrollToEnd()
     {
         this.textArea.scrollYBy(Double.MAX_VALUE);
-        this.autoScroll = true;
     }
 
     public void onSelect()
@@ -360,5 +249,6 @@ public class ConsoleTabScreen extends FxScreen
         }
 
         Null.checkKill(this.process);
+        Null.checkKill(this.textArea);
     }
 }

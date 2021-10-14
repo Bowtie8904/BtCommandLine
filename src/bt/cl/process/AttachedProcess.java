@@ -85,7 +85,6 @@ public class AttachedProcess implements Killable
 
             while ((line = in.readLine()) != null)
             {
-                System.out.println(line);
                 Null.checkConsume(this.incominTextConsumer, line + "\n");
             }
         }

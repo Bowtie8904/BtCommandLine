@@ -1,7 +1,10 @@
 package bt.cl.screen.obj;
 
-import java.util.List;
+import org.fxmisc.richtext.model.StyleSpans;
+import org.reactfx.util.Either;
 
-public record ConsoleEntry(String text, List<String> styles)
+import java.util.Collection;
+
+public record ConsoleEntry(Either<String, Hyperlink> content, StyleSpans<Collection<String>> styleSpans)
 {
 }
