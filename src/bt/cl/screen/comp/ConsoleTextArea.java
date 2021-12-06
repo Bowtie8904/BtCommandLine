@@ -1,12 +1,12 @@
 package bt.cl.screen.comp;
 
 import bt.cl.css.CssClasses;
+import bt.cl.screen.ConsoleTabScreen;
 import bt.cl.screen.obj.*;
 import bt.console.output.styled.Style;
 import bt.console.output.styled.StyledTextNode;
 import bt.scheduler.Threads;
 import bt.types.Killable;
-import bt.utils.Exceptions;
 import javafx.application.Platform;
 import javafx.geometry.VPos;
 import javafx.scene.Cursor;
@@ -19,10 +19,6 @@ import org.fxmisc.richtext.model.TextOps;
 import org.fxmisc.undo.UndoManager;
 import org.reactfx.util.Either;
 
-import java.awt.*;
-import java.net.URI;
-import java.util.List;
-import java.util.Queue;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledFuture;
@@ -31,19 +27,22 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Hyperlink>, Collection<String>> implements Killable
+public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Clickable>, Collection<String>> implements Killable
 {
     private static final TextOps<String, Collection<String>> STYLED_TEXT_OPS = SegmentOps.styledTextOps();
-    private static final HyperlinkOps<Collection<String>> HYPERLINK_OPS = new HyperlinkOps<>();
-    private static final TextOps<Either<String, Hyperlink>, Collection<String>> EITHER_OPS = STYLED_TEXT_OPS._or(HYPERLINK_OPS, (s1, s2) -> Optional.empty());
-
+    private static final ClickableOps<Collection<String>> CLICKABLE_OPS = new ClickableOps<>();
+    private static final TextOps<Either<String, Clickable>, Collection<String>> EITHER_OPS = STYLED_TEXT_OPS._or(CLICKABLE_OPS, (s1, s2) -> Optional.empty());
+    private final String[] nonDefaultNodes = { Style.HYPERLINK_STYLE, Style.CLICKABLE_COMMAND_STYLE };
     private Queue<ConsoleEntry> consoleQueue;
     private int maxParagraphs = 2000;
     private boolean autoScroll = true;
     private Pattern hyperlinkTextpattern = Pattern.compile(Style.HYPERLINK_STYLE + "\\((.*?)\\)");
+    private Pattern clickableCommandTextpattern = Pattern.compile(Style.CLICKABLE_COMMAND_STYLE + "\\((.*?)\\)");
     private ScheduledFuture queueFuture;
 
-    public ConsoleTextArea()
+    private ConsoleTabScreen screen;
+
+    public ConsoleTextArea(ConsoleTabScreen screen)
     {
         super(null,
               (t, p) -> {
@@ -56,14 +55,14 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Hype
                                   t.setText(text);
                                   t.getStyleClass().addAll(e.getStyle());
                               }),
-                      hyperlink ->
+                      clickable ->
                               createStyledTextNode(t -> {
-                                  if (hyperlink.isReal())
+                                  if (clickable.isReal())
                                   {
-                                      t.setText(hyperlink.getDisplayedText());
+                                      t.setText(clickable.getDisplayedText());
                                       t.getStyleClass().addAll(e.getStyle());
 
-                                      t.setOnMouseClicked(ae -> openLink(hyperlink.getLink()));
+                                      t.setOnMouseClicked(ae -> clickable.onClick());
                                       t.setOnMouseEntered(me -> t.setCursor(Cursor.HAND));
                                       t.setOnMouseExited(me -> t.setCursor(Cursor.DEFAULT));
                                   }
@@ -71,16 +70,12 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Hype
               )
         );
 
+        this.screen = screen;
         setUndoManager(getNoOpUndoManager());
         setUseInitialStyleForInsertion(false);
         setAutoScrollOnDragDesired(false);
         this.consoleQueue = new ConcurrentLinkedQueue<>();
         this.queueFuture = Threads.get().scheduleAtFixedRateDaemon(this::appendFromQueue, 100, 100, TimeUnit.MILLISECONDS);
-    }
-
-    public static void openLink(String link)
-    {
-        Exceptions.uncheck(() -> Desktop.getDesktop().browse(new URI(link)));
     }
 
     public static TextExt createStyledTextNode(Consumer<TextExt> applySegment)
@@ -107,9 +102,9 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Hype
         }
     }
 
-    protected java.util.List<String> getNodeStyles(StyledTextNode node)
+    protected List<String> getNodeStyles(StyledTextNode node)
     {
-        java.util.List<String> allStyles = node.getStyles();
+        List<String> allStyles = node.getStyles();
 
         if (allStyles.isEmpty())
         {
@@ -119,38 +114,83 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Hype
         return allStyles;
     }
 
+    protected void createHyperLink(StyledTextNode node, ConsoleNode entry, List<String> styles, String hyperlinkStyle)
+    {
+        Matcher matcher = this.hyperlinkTextpattern.matcher(hyperlinkStyle);
+        String link = "";
+
+        if (matcher.find())
+        {
+            link = matcher.group(1);
+        }
+
+        // append existing text and recreate buffers
+        if (!entry.getStringBuilder().isEmpty())
+        {
+            this.consoleQueue.add(new ConsoleEntry(Either.left(entry.getStringBuilder().toString()), entry.getStyleSpans().create()));
+        }
+
+        entry.setStringBuilder(new StringBuilder());
+        entry.setStyleSpans(new StyleSpansBuilder<>());
+
+        ClickableHyperlink hyperlink = new ClickableHyperlink(node.getText(), node.getText(), link.isBlank() ? node.getText() : link);
+        this.consoleQueue.add(new ConsoleEntry(Either.right(hyperlink), styles));
+    }
+
+    protected void createClickableCommand(StyledTextNode node, ConsoleNode entry, List<String> styles, String commandStyle)
+    {
+        Matcher matcher = this.clickableCommandTextpattern.matcher(commandStyle);
+        String command = "";
+
+        if (matcher.find())
+        {
+            command = matcher.group(1);
+        }
+
+        // append existing text and recreate buffers
+        if (!entry.getStringBuilder().isEmpty())
+        {
+            this.consoleQueue.add(new ConsoleEntry(Either.left(entry.getStringBuilder().toString()), entry.getStyleSpans().create()));
+        }
+
+        entry.setStringBuilder(new StringBuilder());
+        entry.setStyleSpans(new StyleSpansBuilder<>());
+
+        ClickableCommand clickableCommand = new ClickableCommand(this.screen.getProcess(), node.getText(), command.isBlank() ? node.getText() : command);
+        this.consoleQueue.add(new ConsoleEntry(Either.right(clickableCommand), styles));
+    }
+
     protected void appendNode(StyledTextNode node, ConsoleNode entry)
     {
-        Hyperlink hyperlink = null;
-        java.util.List<String> styles = getNodeStyles(node);
+        boolean nonDefaultNode = false;
+        List<String> styles = getNodeStyles(node);
 
-        String hyperlinkStyle = styles.stream()
-                                      .filter(sty -> sty.startsWith(Style.HYPERLINK_STYLE))
-                                      .findAny().orElse(null);
-
-        if (hyperlinkStyle != null)
+        for (String nodeName : this.nonDefaultNodes)
         {
-            Matcher matcher = this.hyperlinkTextpattern.matcher(hyperlinkStyle);
-            String link = "";
+            String style = styles.stream()
+                                 .filter(sty -> sty.startsWith(nodeName))
+                                 .findAny().orElse(null);
 
-            if (matcher.find())
+            if (style != null)
             {
-                link = matcher.group(1);
+                styles.removeIf(sty -> sty.startsWith(nodeName));
+                styles.add(0, nodeName);
+
+                if (nodeName.equals(Style.HYPERLINK_STYLE))
+                {
+                    createHyperLink(node, entry, styles, style);
+                }
+                else if (nodeName.equals(Style.CLICKABLE_COMMAND_STYLE))
+                {
+                    createClickableCommand(node, entry, styles, style);
+                }
+
+                nonDefaultNode = true;
+                break;
             }
-
-            // append existing text and recreate buffers
-            if (!entry.getStringBuilder().isEmpty())
-            {
-                this.consoleQueue.add(new ConsoleEntry(Either.left(entry.getStringBuilder().toString()), entry.getStyleSpans().create()));
-            }
-
-            entry.setStringBuilder(new StringBuilder());
-            entry.setStyleSpans(new StyleSpansBuilder<>());
-
-            hyperlink = new Hyperlink(node.getText(), node.getText(), link.isBlank() ? node.getText() : link);
-            this.consoleQueue.add(new ConsoleEntry(Either.right(hyperlink), null));
         }
-        else
+
+        if (!nonDefaultNode)
         {
             entry.getStringBuilder().append(node.getText());
             entry.getStyleSpans().add(styles, node.getText().length());
@@ -165,7 +205,6 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Hype
     protected void appendFromQueue()
     {
         ConsoleEntry entry = null;
-        Hyperlink hyperlink = null;
         StringBuilder stringBuilder = new StringBuilder();
         StyleSpansBuilder<Collection<String>> styleSpans = new StyleSpansBuilder<>();
 
@@ -175,7 +214,7 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Hype
         {
             count++;
 
-            if (entry.content().isRight())
+            if (entry.getContent().isRight())
             {
                 if (!stringBuilder.isEmpty())
                 {
@@ -184,14 +223,14 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Hype
                     styleSpans = new StyleSpansBuilder<>();
                 }
 
-                hyperlink = entry.content().getRight();
-                appendHyperlink(hyperlink, List.of(Style.HYPERLINK_STYLE));
+                Clickable clickable = entry.getContent().getRight();
+                appendClickable(entry.getContent().getRight(), entry.getStyles());
             }
             else
             {
-                stringBuilder.append(entry.content().getLeft());
+                stringBuilder.append(entry.getContent().getLeft());
 
-                for (var span : entry.styleSpans())
+                for (var span : entry.getStyleSpans())
                 {
                     styleSpans.add(span);
                 }
@@ -204,13 +243,13 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Hype
         }
     }
 
-    protected void appendHyperlink(Hyperlink link, Collection<String> styles)
+    protected void appendClickable(Clickable clickable, Collection<String> styles)
     {
         Platform.runLater(() -> {
             try
             {
                 int oldLength = getLength();
-                append(Either.right(link), styles);
+                append(Either.right(clickable), styles);
 
                 while (getParagraphs().size() > this.maxParagraphs)
                 {

@@ -76,7 +76,7 @@ public class ConsoleTabScreen extends FxScreen
     protected void prepareScreen()
     {
         this.history = new ArrayList<>(this.historySize);
-        this.textArea = new ConsoleTextArea();
+        this.textArea = new ConsoleTextArea(this);
         this.textArea.setEditable(false);
         this.textArea.setPadding(new Insets(0, 10, 10, 5));
         this.virtualScrollPane = new VirtualizedScrollPane(this.textArea);
@@ -176,6 +176,11 @@ public class ConsoleTabScreen extends FxScreen
     public void onSelect()
     {
         this.inputTextField.requestFocus();
+    }
+
+    public AttachedProcess getProcess()
+    {
+        return this.process;
     }
 
     public void setProcess(String... args)

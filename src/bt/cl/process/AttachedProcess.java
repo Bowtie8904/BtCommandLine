@@ -20,6 +20,7 @@ public class AttachedProcess implements Killable
     private String executablePath;
     private String executable;
     private String[] args;
+    private boolean isAlive;
 
     public AttachedProcess(String... args)
     {
@@ -78,6 +79,7 @@ public class AttachedProcess implements Killable
         processBuilder.redirectErrorStream(true);
         this.process = processBuilder.start();
         this.out = new BufferedWriter(new OutputStreamWriter(this.process.getOutputStream()));
+        this.isAlive = true;
 
         try (BufferedReader in = new BufferedReader(new InputStreamReader(this.process.getInputStream())))
         {
@@ -115,6 +117,12 @@ public class AttachedProcess implements Killable
 
         Exceptions.uncheck(() -> Null.checkClose(this.out));
         Null.checkRun(this.process, () -> this.process.destroy());
+        this.isAlive = false;
+    }
+
+    public boolean isAlive()
+    {
+        return this.isAlive;
     }
 
     public String getExecutable()
