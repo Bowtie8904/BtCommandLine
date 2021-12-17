@@ -64,17 +64,12 @@
         <dependency>
             <groupId>com.github.Bowtie8904</groupId>
             <artifactId>BtCommons</artifactId>
-            <version>007058f9</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.Bowtie8904</groupId>
-            <artifactId>BtConsole</artifactId>
-            <version>7189d6ac</version>
+            <version>9d8566dc</version>
         </dependency>
         <dependency>
             <groupId>com.github.Bowtie8904</groupId>
             <artifactId>BtUserInterface</artifactId>
-            <version>5ce46cb5</version>
+            <version>c0fb57bf</version>
         </dependency>
         <dependency>
             <groupId>org.fxmisc.richtext</groupId>

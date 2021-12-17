@@ -1,5 +1,6 @@
 package bt.cl.css;
 
+import bt.log.Log;
 import bt.utils.FileUtils;
 import javafx.scene.Scene;
 
@@ -17,19 +18,23 @@ public class CssLoader
 
     public void loadCssFiles() throws MalformedURLException
     {
+        Log.entry();
+
         File jarDirectory = FileUtils.getJarDirectory(CssLoader.class);
         File folder = new File(jarDirectory.getAbsolutePath() + "/css");
 
         if (!folder.exists())
         {
             folder.mkdirs();
-            System.out.println("Created CSS folder '" + folder.getAbsolutePath() + "'.");
+            Log.info("Created CSS folder '" + folder.getAbsolutePath() + "'.");
         }
 
         for (File cssFile : FileUtils.getFiles(folder.getAbsolutePath(), "css"))
         {
-            System.out.println("Loading style class '" + cssFile.getAbsolutePath() + "'.");
+            Log.info("Loading style class '" + cssFile.getAbsolutePath() + "'.");
             this.scene.getStylesheets().add(cssFile.toURI().toURL().toString());
         }
+
+        Log.exit();
     }
 }

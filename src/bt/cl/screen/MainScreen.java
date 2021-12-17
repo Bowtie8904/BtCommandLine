@@ -11,6 +11,7 @@ import bt.gui.fx.core.annot.handl.evnt.type.FxOnMouseEntered;
 import bt.gui.fx.core.annot.handl.evnt.type.FxOnMouseExited;
 import bt.gui.fx.core.exc.FxException;
 import bt.gui.fx.util.ButtonHandling;
+import bt.log.Log;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -124,7 +125,7 @@ public class MainScreen extends FxScreen
         }
         catch (MalformedURLException e)
         {
-            e.printStackTrace();
+            Log.error("Failed to load CSS classes", e);
         }
     }
 
@@ -141,7 +142,7 @@ public class MainScreen extends FxScreen
         catch (InstantiationException | IllegalAccessException
                 | InvocationTargetException | SecurityException e1)
         {
-            e1.printStackTrace();
+            Log.error("Failed to construct screen instance", e1);
         }
         catch (NoSuchMethodException noEx)
         {

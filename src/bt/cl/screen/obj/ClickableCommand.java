@@ -1,6 +1,7 @@
 package bt.cl.screen.obj;
 
 import bt.cl.process.AttachedProcess;
+import bt.log.Log;
 
 import java.io.IOException;
 
@@ -48,6 +49,8 @@ public class ClickableCommand extends Clickable
     @Override
     public void onClick()
     {
+        Log.entry();
+
         if (this.process != null && this.process.isAlive())
         {
             try
@@ -56,8 +59,10 @@ public class ClickableCommand extends Clickable
             }
             catch (IOException e)
             {
-                e.printStackTrace();
+                Log.error("Failed to execute clickable command", e);
             }
         }
+
+        Log.exit();
     }
 }

@@ -11,6 +11,7 @@ import bt.gui.fx.core.annot.FxmlElement;
 import bt.gui.fx.core.annot.handl.FxHandler;
 import bt.gui.fx.core.annot.handl.evnt.type.FxOnKeyReleased;
 import bt.gui.fx.core.annot.setup.FxSetup;
+import bt.log.Log;
 import bt.runtime.InstanceKiller;
 import bt.scheduler.Threads;
 import bt.utils.Null;
@@ -101,6 +102,8 @@ public class ConsoleTabScreen extends FxScreen
 
     private void addHistory(String text)
     {
+        Log.entry(text);
+
         if (this.history.size() >= this.historySize - 1 && !this.history.contains(text))
         {
             this.history.remove(this.history.size() - 1);
@@ -108,9 +111,11 @@ public class ConsoleTabScreen extends FxScreen
 
         this.history.remove(text);
         this.history.add(0, text);
+
+        Log.exit();
     }
 
-    public void setHistoryEntryAsactive()
+    public void setHistoryEntryAsActive()
     {
         if (!this.history.isEmpty() && this.historyIndex >= 0 && this.historyIndex < this.history.size())
         {
@@ -127,6 +132,8 @@ public class ConsoleTabScreen extends FxScreen
     {
         if (e.getCode() == KeyCode.ENTER)
         {
+            Log.debug("User entered text into textfield '{}'", this.inputTextField.getText());
+
             var node = this.parser.parseNode(this.inputTextField.getText() + "\n");
             this.textArea.append(node);
 
@@ -134,15 +141,18 @@ public class ConsoleTabScreen extends FxScreen
             {
                 try
                 {
+                    Log.debug("Sending user input to process '{}'", this.process.getExecutable());
                     this.process.write(this.inputTextField.getText() + "\n");
                 }
                 catch (IOException ex)
                 {
                     printException(ex);
+                    Log.error("Failed to write line to process", ex);
                 }
             }
             else
             {
+                Log.debug("No active process. Attempting to start new process");
                 setProcess(ArgumentParser.parseArguments(this.inputTextField.getText()));
             }
 
@@ -152,20 +162,33 @@ public class ConsoleTabScreen extends FxScreen
         }
         else if (e.getCode() == KeyCode.UP)
         {
+            Log.debug("User pressed up");
             this.historyIndex++;
-            setHistoryEntryAsactive();
+            setHistoryEntryAsActive();
         }
         else if (e.getCode() == KeyCode.DOWN)
         {
+            Log.debug("User pressed down");
             this.historyIndex--;
-            setHistoryEntryAsactive();
+            setHistoryEntryAsActive();
         }
     }
 
     public void parseAndAppendText(String text)
     {
+        Log.entry(text);
+
+        if (text.startsWith("<clear>"))
+        {
+            Log.debug("Received clear command. Clearing text area");
+            this.textArea.clear();
+            return;
+        }
+
         var node = this.parser.parseNode(text, true);
         this.textArea.append(node);
+
+        Log.exit();
     }
 
     public void setAutoScroll(boolean autoScroll)
@@ -185,6 +208,8 @@ public class ConsoleTabScreen extends FxScreen
 
     public void setProcess(String... args)
     {
+        Log.entry(args);
+
         try
         {
             this.process = new AttachedProcess(args);
@@ -212,13 +237,20 @@ public class ConsoleTabScreen extends FxScreen
                 catch (Exception e)
                 {
                     printException(e);
+                    Log.error("Error during process", e);
                 }
             }, this.process.getExecutable());
         }
-        catch (Exception e)
+        catch (IllegalArgumentException e)
         {
             parseAndAppendText(Style.apply(e.getMessage(), "red", "bold"));
         }
+        catch (Exception e1)
+        {
+            Log.error("Failed to set process", e1);
+        }
+
+        Log.exit();
     }
 
     protected String styleExitStatus(int status)
@@ -245,6 +277,8 @@ public class ConsoleTabScreen extends FxScreen
     @Override
     public void kill()
     {
+        Log.entry();
+
         if (!InstanceKiller.isActive())
         {
             InstanceKiller.unregister(this);
@@ -252,5 +286,7 @@ public class ConsoleTabScreen extends FxScreen
 
         Null.checkKill(this.process);
         Null.checkKill(this.textArea);
+
+        Log.exit();
     }
 }

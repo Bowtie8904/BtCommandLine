@@ -1,5 +1,6 @@
 package bt.cl.screen.obj;
 
+import bt.log.Log;
 import bt.utils.Exceptions;
 
 import java.awt.*;
@@ -41,7 +42,10 @@ public class ClickableHyperlink extends Clickable
     @Override
     public void onClick()
     {
-        System.out.println("here");
+        Log.entry();
+
         Exceptions.uncheck(() -> Desktop.getDesktop().browse(new URI(getLink())));
+
+        Log.exit();
     }
 }

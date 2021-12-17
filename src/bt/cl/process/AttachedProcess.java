@@ -1,5 +1,6 @@
 package bt.cl.process;
 
+import bt.log.Log;
 import bt.types.Killable;
 import bt.utils.Array;
 import bt.utils.Exceptions;
@@ -30,12 +31,15 @@ public class AttachedProcess implements Killable
 
     public String findAbsolutePath(String executable)
     {
+        Log.entry(executable);
+
         File file = new File(executable);
 
         if (!file.exists() || !file.canExecute())
         {
             String path = System.getenv("PATH");
             String[] dirs = path.split(";");
+
             for (String dir : dirs)
             {
                 for (String ending : fileEndings)
@@ -70,11 +74,17 @@ public class AttachedProcess implements Killable
             throw new IllegalArgumentException("Cant find executable command for '" + executable + "'.");
         }
 
-        return file.getAbsolutePath();
+        String result = file.getAbsolutePath();
+
+        Log.exit(result);
+
+        return result;
     }
 
     public int start() throws IOException, InterruptedException
     {
+        Log.entry();
+
         ProcessBuilder processBuilder = new ProcessBuilder(Array.concat(new String[] { this.executablePath }, this.args, String[]::new));
         processBuilder.redirectErrorStream(true);
         this.process = processBuilder.start();
@@ -87,19 +97,29 @@ public class AttachedProcess implements Killable
 
             while ((line = in.readLine()) != null)
             {
+                Log.debug("Received line from process '{}'", line);
                 Null.checkConsume(this.incominTextConsumer, line + "\n");
             }
         }
 
         this.process.waitFor();
         kill();
-        return this.process.exitValue();
+
+        int exitCode = this.process.exitValue();
+
+        Log.exit(exitCode);
+
+        return exitCode;
     }
 
     public void write(String text) throws IOException
     {
+        Log.entry(text);
+
         this.out.write(text);
         this.out.flush();
+
+        Log.exit();
     }
 
     public void setIncominTextConsumer(Consumer<String> incominTextConsumer)
@@ -110,14 +130,19 @@ public class AttachedProcess implements Killable
     @Override
     public void kill()
     {
+        Log.entry();
+
         if (this.process != null && this.process.isAlive())
         {
+            Log.debug("Sending default exit command to process '{}'", this.executable);
             Exceptions.uncheck(() -> write(DEFAULT_EXIT_COMMAND));
         }
 
         Exceptions.uncheck(() -> Null.checkClose(this.out));
         Null.checkRun(this.process, () -> this.process.destroy());
         this.isAlive = false;
+
+        Log.exit();
     }
 
     public boolean isAlive()

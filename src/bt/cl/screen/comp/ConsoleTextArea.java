@@ -5,6 +5,7 @@ import bt.cl.screen.ConsoleTabScreen;
 import bt.cl.screen.obj.*;
 import bt.console.output.styled.Style;
 import bt.console.output.styled.StyledTextNode;
+import bt.log.Log;
 import bt.scheduler.Threads;
 import bt.types.Killable;
 import javafx.application.Platform;
@@ -80,9 +81,13 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Clic
 
     public static TextExt createStyledTextNode(Consumer<TextExt> applySegment)
     {
+        Log.entry(applySegment);
         TextExt t = new TextExt();
         t.setTextOrigin(VPos.TOP);
         applySegment.accept(t);
+
+        Log.exit(t);
+
         return t;
     }
 
@@ -93,6 +98,8 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Clic
 
     public void append(StyledTextNode node)
     {
+        Log.entry(node);
+
         ConsoleNode entry = new ConsoleNode(new StringBuilder(), new StyleSpansBuilder<>());
         appendNode(node, entry);
 
@@ -100,10 +107,14 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Clic
         {
             this.consoleQueue.add(new ConsoleEntry(Either.left(entry.getStringBuilder().toString()), entry.getStyleSpans().create()));
         }
+
+        Log.exit();
     }
 
     protected List<String> getNodeStyles(StyledTextNode node)
     {
+        Log.entry(node);
+
         List<String> allStyles = node.getStyles();
 
         if (allStyles.isEmpty())
@@ -111,11 +122,15 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Clic
             allStyles.add(CssClasses.DEFAULT_TEXT);
         }
 
+        Log.exit(allStyles);
+
         return allStyles;
     }
 
     protected void createHyperLink(StyledTextNode node, ConsoleNode entry, List<String> styles, String hyperlinkStyle)
     {
+        Log.entry(node, entry, styles, hyperlinkStyle);
+
         Matcher matcher = this.hyperlinkTextpattern.matcher(hyperlinkStyle);
         String link = "";
 
@@ -135,10 +150,14 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Clic
 
         ClickableHyperlink hyperlink = new ClickableHyperlink(node.getText(), node.getText(), link.isBlank() ? node.getText() : link);
         this.consoleQueue.add(new ConsoleEntry(Either.right(hyperlink), styles));
+
+        Log.exit(hyperlink);
     }
 
     protected void createClickableCommand(StyledTextNode node, ConsoleNode entry, List<String> styles, String commandStyle)
     {
+        Log.entry(node, entry, styles, commandStyle);
+
         Matcher matcher = this.clickableCommandTextpattern.matcher(commandStyle);
         String command = "";
 
@@ -158,10 +177,14 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Clic
 
         ClickableCommand clickableCommand = new ClickableCommand(this.screen.getProcess(), node.getText(), command.isBlank() ? node.getText() : command);
         this.consoleQueue.add(new ConsoleEntry(Either.right(clickableCommand), styles));
+
+        Log.exit(clickableCommand);
     }
 
     protected void appendNode(StyledTextNode node, ConsoleNode entry)
     {
+        Log.entry(node, entry);
+
         boolean nonDefaultNode = false;
         List<String> styles = getNodeStyles(node);
 
@@ -200,6 +223,8 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Clic
         {
             appendNode(child, entry);
         }
+
+        Log.exit();
     }
 
     protected void appendFromQueue()
@@ -245,6 +270,8 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Clic
 
     protected void appendClickable(Clickable clickable, Collection<String> styles)
     {
+        Log.entry(clickable, styles);
+
         Platform.runLater(() -> {
             try
             {
@@ -263,13 +290,17 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Clic
             }
             catch (Exception e)
             {
-                e.printStackTrace();
+                Log.error("Failed to append text", e);
             }
         });
+
+        Log.exit();
     }
 
     protected void appendText(String text, StyleSpans<Collection<String>> styleSpans)
     {
+        Log.entry(text, styleSpans);
+
         if (!text.isEmpty())
         {
             Platform.runLater(() -> {
@@ -291,10 +322,12 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Clic
                 }
                 catch (Exception e)
                 {
-                    e.printStackTrace();
+                    Log.error("Failed to append text", e);
                 }
             });
         }
+
+        Log.exit();
     }
 
     public void scrollToEnd()
@@ -315,9 +348,13 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Clic
     @Override
     public void kill()
     {
+        Log.entry();
+
         if (this.queueFuture != null)
         {
             this.queueFuture.cancel(true);
         }
+
+        Log.exit();
     }
 }
