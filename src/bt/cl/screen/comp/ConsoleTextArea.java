@@ -111,11 +111,11 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Clic
         Log.exit();
     }
 
-    protected List<String> getNodeStyles(StyledTextNode node)
+    protected Set<String> getNodeStyles(StyledTextNode node)
     {
         Log.entry(node);
 
-        List<String> allStyles = node.getStyles();
+        Set<String> allStyles = node.getStyles();
 
         if (allStyles.isEmpty())
         {
@@ -127,7 +127,7 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Clic
         return allStyles;
     }
 
-    protected void createHyperLink(StyledTextNode node, ConsoleNode entry, List<String> styles, String hyperlinkStyle)
+    protected void createHyperLink(StyledTextNode node, ConsoleNode entry, Set<String> styles, String hyperlinkStyle)
     {
         Log.entry(node, entry, styles, hyperlinkStyle);
 
@@ -154,7 +154,7 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Clic
         Log.exit(hyperlink);
     }
 
-    protected void createClickableCommand(StyledTextNode node, ConsoleNode entry, List<String> styles, String commandStyle)
+    protected void createClickableCommand(StyledTextNode node, ConsoleNode entry, Set<String> styles, String commandStyle)
     {
         Log.entry(node, entry, styles, commandStyle);
 
@@ -186,7 +186,7 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Clic
         Log.entry(node, entry);
 
         boolean nonDefaultNode = false;
-        List<String> styles = getNodeStyles(node);
+        Set<String> styles = getNodeStyles(node);
 
         for (String nodeName : this.nonDefaultNodes)
         {
@@ -197,7 +197,7 @@ public class ConsoleTextArea extends GenericStyledArea<Void, Either<String, Clic
             if (style != null)
             {
                 styles.removeIf(sty -> sty.startsWith(nodeName));
-                styles.add(0, nodeName);
+                styles.add(nodeName);
 
                 if (nodeName.equals(Style.HYPERLINK_STYLE))
                 {

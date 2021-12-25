@@ -63,13 +63,8 @@
     <dependencies>
         <dependency>
             <groupId>com.github.Bowtie8904</groupId>
-            <artifactId>BtCommons</artifactId>
-            <version>9d8566dc</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.Bowtie8904</groupId>
             <artifactId>BtUserInterface</artifactId>
-            <version>c0fb57bf</version>
+            <version>964ac8de</version>
         </dependency>
         <dependency>
             <groupId>org.fxmisc.richtext</groupId>
